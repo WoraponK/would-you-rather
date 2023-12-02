@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คุณเลือกที่จะ...</title>
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts ( IBM Plex Sans Thai ) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai&display=swap" rel="stylesheet">
+
+    <!-- VueJS2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        * {
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <nav class="absolute w-full px-8 pt-4">
+            <ul class="flex space-x-4">
+                <li class="hover:underline"><a href="https://www.facebook.com/ggtellytawin/" target="_blank">facebook</a></li>
+                <li class="hover:underline"><a href="https://www.instagram.com/telly_tawin/" target="_blank">instagram</a></li>
+                <li class="hover:underline"><a href="https://github.com/WoraponK/" target="_blank">github</a></li>
+            </ul>
+        </nav>
+        <div class="w-screen h-screen flex">
+            <div @click="countLeftClick()" class="w-1/2 h-full bg-white text-stone-800 grid place-items-center text-3xl group hover:cursor-pointer">
+                <h2 class="w-4/5 text-center group-hover:animate-bounce">{{ quote.left_q }}</h2>
+                <h3 id="leftPercent" class="absolute translate-y-72 invisible">{{ left_percent }}%</h3>
+            </div>
+            <div @click="countRightClick()" class="w-1/2 h-full bg-stone-800 text-white grid place-items-center text-3xl group hover:cursor-pointer">
+                <h2 class="w-4/5 text-center group-hover:animate-bounce">{{ quote.right_q }}</h2>
+                <h3 id="rightPercent" class="absolute translate-y-72 invisible">{{ right_percent }}%</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- VueJS Script -->
+    <script>
+        const host = 'http://localhost:8000'
+
+        new Vue ({
+            el: '#app',
+            data: {
+                quote: [],
+                quoteDummy: [],
+                left_percent: 0,
+                right_percent: 0,
+                quote_count: 0
+            },
+            mounted() {
+                this.randomQuote();
+                this.fetchQuote();
+            },
+            methods: {
+                randomQuote() {
+                    axios.get(`${host}/quote`)
+                    .then(res => {
+                        this.quoteDummy = res.data
+                        const arrayQuote = [];
+                        for (const q in this.quoteDummy) {
+                            arrayQuote.push(q);
+                        }
+                        this.arrayQuote = arrayQuote.sort(() => Math.random() - 0.5);
+                    })
+                    .catch (error => {
+                        console.log(error);
+                        location.reload();
+                    })
+                },
+
+                fetchQuote() {
+                    axios.get(`${host}/quote/`)
+                    .then(res => {
+                        this.quote = res.data[this.arrayQuote[this.quote_count]]
+                    })
+                    .catch (error => {
+                        console.log(error);
+                        location.reload();
+                    })
+                },
+
+                calQuotePercent() {
+                    axios.get(`${host}/quote`)
+                    .then(res => {
+                        const { left_count, right_count, amount_count } = this.quote;
+
+                        this.left_percent = Math.round((left_count / amount_count) * 100);
+                        this.right_percent = Math.round((right_count / amount_count) * 100);
+
+                        let leftPercent = document.getElementById('leftPercent');
+                        let rightPercent = document.getElementById('rightPercent');
+
+                        leftPercent.classList.remove('invisible');
+                        rightPercent.classList.remove('invisible');
+                    })
+                },
+
+                countLeftClick() {
+                    axios.put(`${host}/quote/${this.quote.id}/left`)
+                        .then(res => {
+                            this.calQuotePercent();
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000)
+                        })
+                },
+
+                countRightClick() {
+                    axios.put(`${host}/quote/${this.quote.id}/right`)
+                        .then(res => {
+                            this.calQuotePercent();
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000)
+                        })
+                }
+            }
+        })
+    </script>
+</body>
+</html>
